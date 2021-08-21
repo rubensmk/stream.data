@@ -8,31 +8,31 @@ import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../services/api';
 
 import {
-  Container, 
-  Header, 
-  UserInfo, 
-  Avatar, 
+  Container,
+  Header,
+  UserInfo,
+  Avatar,
   UserInfoText,
-  SignOutButton, 
-  UserFollowedStreams, 
-  UserFollowedStreamsTitle, 
-  TopGames, 
+  SignOutButton,
+  UserFollowedStreams,
+  UserFollowedStreamsTitle,
+  TopGames,
   TopGamesTitle
 } from './styles';
 import { UserFollowedStreamCard } from '../../components/UserFollowedStreamCard';
 
 interface TopGames {
-  box_art_url: string, 
-  id: string, 
+  box_art_url: string,
+  id: string,
   name: string
 }
 
 interface UserFollowedStreams {
   id: string;
-  thumbnail_url: string, 
+  thumbnail_url: string,
   title: string,
-  user_id: string, 
-  user_login: string, 
+  user_id: string,
+  user_login: string,
   user_name: string,
   viewer_count: number
 }
@@ -46,13 +46,19 @@ export function Home() {
   const [userFollowedStreams, setUserFollowedStreams] = useState<UserFollowedStreamsFormatted[]>([]);
   const [isLoadingUserFollowedStreams, setIsLoadingUserFollowedStreams] = useState(true);
   const [isLoadingTopGames, setIsLoadingTopGames] = useState(true);
-  
+
   const theme = useTheme();
   const { signOut, user, isLoggingOut } = useAuth();
 
-  // creates a function to handle sign out
-    // try to call and wait signOut
-    // if fails, display an Alert with the title "Erro SignOut" and message "Ocorreu um erro ao tentar se deslogar do app"
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      Alert.alert('Erro SignOut, Ocorreu um erro ao tentar se deslogar do app.')
+    }
+  }
+
 
   async function getTopGames() {
     try {
@@ -67,14 +73,14 @@ export function Home() {
 
   async function getUserFollowedStreamsAvatar(userFollowedStreamsData: UserFollowedStreams[]) {
     return Promise.all(userFollowedStreamsData.map(async (item) => {
-        try {
-          const response = await api.get(`/users?id=${item.user_id}`);
+      try {
+        const response = await api.get(`/users?id=${item.user_id}`);
 
-          return { ...item, user_avatar_url: response.data.data[0].profile_image_url }
-        } catch (error) {
-          return { ...item, user_avatar_url: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/cdd517fe-def4-11e9-948e-784f43822e80-profile_image-300x300.png' }
-        }
-      })
+        return { ...item, user_avatar_url: response.data.data[0].profile_image_url }
+      } catch (error) {
+        return { ...item, user_avatar_url: 'https://static-cdn.jtvnw.net/user-default-pictures-uv/cdd517fe-def4-11e9-948e-784f43822e80-profile_image-300x300.png' }
+      }
+    })
     )
   }
 
@@ -83,7 +89,7 @@ export function Home() {
       const response = await api.get<{ data: UserFollowedStreams[] }>(`/streams/followed?user_id=${user.id}`);
 
       const formattedResponse = await getUserFollowedStreamsAvatar(response.data.data);
-      
+
       if (formattedResponse) {
         setUserFollowedStreams(formattedResponse);
         setIsLoadingUserFollowedStreams(false);
@@ -121,17 +127,19 @@ export function Home() {
           <UserInfoText style={{ fontFamily: theme.fonts.bold }}>{user.display_name}</UserInfoText>
         </UserInfo>
 
-        {/* <SignOutButton onPress={}>
-          Verify if isLoggingOut is true
-          If it is, show an ActivityIndicator
-          Otherwise, show Feather's power icon
-        </SignOutButton> */}
+        <SignOutButton onPress={handleSignOut}>
+          {isLoggingOut ? (
+            <ActivityIndicator size={25} color={theme.colors.white} />
+          ) : (
+              <Feather name="power" size={24} color={theme.colors.white} />
+            )}
+        </SignOutButton>
       </Header>
 
       <UserFollowedStreams>
         <UserFollowedStreamsTitle>Canais que você segue</UserFollowedStreamsTitle>
 
-        <FlatList 
+        <FlatList
           data={!isLoadingUserFollowedStreams ? userFollowedStreams : [{ id: '1' } as UserFollowedStreamsFormatted, { id: '2' } as UserFollowedStreamsFormatted]}
           keyExtractor={item => item.id}
           horizontal
@@ -146,7 +154,7 @@ export function Home() {
             paddingRight: 12
           }}
           renderItem={({ item }) => (
-            <UserFollowedStreamCard 
+            <UserFollowedStreamCard
               avatarUrl={item.user_avatar_url}
               streamer_login={item.user_login}
               streamer_name={item.user_name}
@@ -162,7 +170,7 @@ export function Home() {
       <TopGames>
         <TopGamesTitle>Mais assistidos do momento</TopGamesTitle>
 
-        <FlatList 
+        <FlatList
           data={!isLoadingTopGames ? topGames : [{ id: '1' } as TopGames, { id: '2' } as TopGames, { id: '3' } as TopGames]}
           keyExtractor={item => item.id}
           horizontal
@@ -187,7 +195,7 @@ export function Home() {
         />
       </TopGames>
 
-      <Modal 
+      <Modal
         animationType="fade"
         visible={isLoggingOut}
         statusBarTranslucent
